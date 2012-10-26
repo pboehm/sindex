@@ -1,0 +1,13 @@
+<!ELEMENT seriesindex (series+)>
+
+<!ELEMENT series(episodes|alias)*>
+<!ATTLIST series name CDATA #REQUIRED>
+
+<!ELEMENT episodes(episode*)>
+<!ATTLIST episodes lang (de|en) "de">
+
+<!ELEMENT episode EMPTY>
+<!ATTLIST episode name CDATA #REQUIRED>
+
+<!ELEMENT alias EMPTY>
+<!ATTLIST alias to CDATA #REQUIRED>
