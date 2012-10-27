@@ -4,7 +4,7 @@
 <!ATTLIST series name CDATA #REQUIRED>
 
 <!ELEMENT episodes(episode*)>
-<!ATTLIST episodes lang (de|en) "de">
+<!ATTLIST episodes lang (de|en|fr) "de">
 
 <!ELEMENT episode EMPTY>
 <!ATTLIST episode name CDATA #REQUIRED>

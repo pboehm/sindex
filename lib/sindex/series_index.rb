@@ -59,11 +59,7 @@ module Sindex
       series_name = series_name_in_index(series_name)
 
       if series_name and series = @series_data[series_name]
-        if language == :de
-          return series.has_german_episodes?
-        else
-          return series.has_english_episodes?
-        end
+        return series.has_episodes_in_language?(language)
       end
 
       false

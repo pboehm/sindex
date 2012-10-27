@@ -2,19 +2,18 @@ module Sindex
 
   class Series
 
-    attr_accessor :de_episodes, :en_episodes
+    attr_accessor :episodes
 
     def initialize
-      @de_episodes = {}
-      @en_episodes = {}
+      @episodes = {}
     end
 
-    def has_german_episodes?
-      ! @de_episodes.empty?
-    end
-
-    def has_english_episodes?
-      ! @en_episodes.empty?
+    # Public: determines if thos series contains episode in the
+    # supplied language
+    #
+    #   :language - language-symbol :de/:en/...
+    def has_episodes_in_language?(language)
+      ! @episodes[language].nil?
     end
 
     # Public: Adds an existing episode to the list of episodes
@@ -24,11 +23,12 @@ module Sindex
     #
     def add_episode(filename, language=:de)
       if id = SeriesIndex.extract_episode_identifier(filename)
-        if language == :de
-          @de_episodes[id] = filename
-        else
-          @en_episodes[id] = filename
+
+        if @episodes[language].nil?
+          @episodes[language] = {}
         end
+
+        @episodes[language][id] = filename
       end
     end
 
@@ -37,14 +37,14 @@ module Sindex
     #   :episode_data - data that hoölds the episode identifier
     #   :language - the language in which the episode is available :de/:en
     def is_episode_existing?(episode_data, language=:de)
+
       if id = SeriesIndex.extract_episode_identifier(episode_data)
-        if language == :de
-          return @de_episodes.has_key? id
-        else
-          return @en_episodes.has_key? id
+        if not @episodes[language].nil?
+          return @episodes[language].has_key? id
         end
       end
 
+      false
     end
 
   end

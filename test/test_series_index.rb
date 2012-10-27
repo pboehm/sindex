@@ -21,13 +21,13 @@ class TestIndex < Test::Unit::TestCase
     assert_not_nil @series_index.series_data['Community']
 
     series = @series_index.series_data['Community']
-    assert_equal series.has_german_episodes?, true
-    assert_not_nil series.de_episodes['1_1']
-    assert_nil series.de_episodes['11_11']
+    assert_equal series.has_episodes_in_language?(:de), true
+    assert_not_nil series.episodes[:de]['1_1']
+    assert_nil series.episodes[:de]['11_11']
 
     series = @series_index.series_data['Shameless US']
-    assert_equal series.has_german_episodes?, true
-    assert_equal series.has_english_episodes?, true
+    assert_equal series.has_episodes_in_language?(:de), true
+    assert_equal series.has_episodes_in_language?(:en), true
   end
 
   def test_that_series_aliases_take_place
