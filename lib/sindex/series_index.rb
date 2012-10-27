@@ -70,39 +70,10 @@ module Sindex
     #   :filename - path to file in which the index should be dumped
     def dump_index_to_file(filename)
 
-      dtd_path = File.expand_path(
-        File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
-
-      builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
-        xml.doc.create_internal_subset("seriesindex", nil, dtd_path)
-
-        xml.seriesindex {
-          @series_data.each do |seriesname, data|
-            attrs = {:name => seriesname}
-            attrs[:receive_updates] = false unless data.receive_updates
-
-            xml.series(attrs) {
-
-              # write alias definition if there are any
-              @series_aliases.select { |al,re| re == seriesname }.each do |_alias,real|
-                xml.alias(:to => _alias)
-              end
-
-              # write the different episodes
-              data.episodes.each do |language, episodes|
-                xml.episodes(:lang => language) {
-                  episodes.each do |episode_id, filename|
-                    xml.episode(:name => filename)
-                  end
-                }
-              end
-            }
-          end
-        }
-      end
+      tree = build_up_xml_tree_from_index
 
       File.open(filename, "w") do |f|
-        f.write(builder.to_xml);
+        f.write(tree);
       end
     end
 
@@ -151,6 +122,46 @@ module Sindex
     end
 
     private
+
+    # Private: this methode places the information from index into a
+    # new XML tree
+    #
+    # Returns XML tree
+    def build_up_xml_tree_from_index
+
+      dtd_path = File.expand_path(
+        File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
+
+      builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
+        xml.doc.create_internal_subset("seriesindex", nil, dtd_path)
+
+        xml.seriesindex {
+          @series_data.sort.map do |seriesname, data|
+            attrs = {:name => seriesname}
+            attrs[:receive_updates] = false unless data.receive_updates
+
+            xml.series(attrs) {
+
+              # write alias definition if there are any
+              @series_aliases.select { |al,re| re == seriesname }.each do |_alias,real|
+                xml.alias(:to => _alias)
+              end
+
+              # write the different episodes
+              data.episodes.each do |language, episodes|
+                xml.episodes(:lang => language) {
+                  episodes.each do |episode_id, filename|
+                    xml.episode(:name => filename)
+                  end
+                }
+              end
+            }
+          end
+        }
+      end
+
+      builder.to_xml
+    end
 
     # Internal: finds the seriesname for the supplied name in index
     #
