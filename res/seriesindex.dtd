@@ -2,6 +2,7 @@
 
 <!ELEMENT series(episodes|alias)*>
 <!ATTLIST series name CDATA #REQUIRED>
+<!ATTLIST series receive_updates (true|false) "true">
 
 <!ELEMENT episodes(episode*)>
 <!ATTLIST episodes lang (de|en|fr) "de">

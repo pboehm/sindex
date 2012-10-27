@@ -78,7 +78,10 @@ module Sindex
 
         xml.seriesindex {
           @series_data.each do |seriesname, data|
-            xml.series(:name => seriesname) {
+            attrs = {:name => seriesname}
+            attrs[:receive_updates] = false unless data.receive_updates
+
+            xml.series(attrs) {
 
               # write alias definition if there are any
               @series_aliases.select { |al,re| re == seriesname }.each do |_alias,real|
@@ -185,6 +188,8 @@ module Sindex
         next unless series_name and series_name.match(/\w+/)
 
         s = Series.new()
+
+        s.receive_updates = false if series[:receive_updates].match(/false/i)
 
         series.css('episodes').each do |episodes|
           language = episodes['lang'].match(/de/) ? :de : :en

@@ -2,10 +2,11 @@ module Sindex
 
   class Series
 
-    attr_accessor :episodes
+    attr_accessor :episodes, :receive_updates
 
-    def initialize
+    def initialize(receive_updates=true)
       @episodes = {}
+      @receive_updates=receive_updates
     end
 
     # Public: determines if thos series contains episode in the
@@ -37,6 +38,10 @@ module Sindex
     #   :episode_data - data that hoölds the episode identifier
     #   :language - the language in which the episode is available :de/:en
     def is_episode_existing?(episode_data, language=:de)
+
+      # if we are not interested in updates this method responds
+      # always with true
+      return true unless @receive_updates
 
       if id = SeriesIndex.extract_episode_identifier(episode_data)
         if not @episodes[language].nil?

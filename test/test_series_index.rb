@@ -72,5 +72,20 @@ class TestIndex < Test::Unit::TestCase
 
     index = Sindex::SeriesIndex.new(index_file: filename)
     assert_equal index.is_series_in_index?("Community", true), true
+
+    assert_equal false, index.episode_existing?("Shameless US",
+      "Shameless.US.S01E09.Just.Like.The.Pilgrims.Intended.German")
+
+    assert_equal true, index.episode_existing?("Shameless US",
+      "Shameless.US.S01E09.Just.Like.The.Pilgrims.Intended.German", :en)
+  end
+
+  def test_that_the_receive_updates_flag_is_used
+    assert_equal @series_index.series_data["Prison Break"].receive_updates, false
+
+    # when the receive_updates flag  is set to false
+    # :episode_existing? returns always true
+    assert_equal true, @series_index.episode_existing?("Prison Break",
+        "Prison.Break.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
   end
 end

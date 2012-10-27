@@ -65,4 +65,12 @@
             <episode name="S02E11 - Just Like The Pilgrims Intended.mkv" />
         </episodes>
     </series>
+    <series name="Prison Break" receive_updates="false">
+        <episodes>
+            <episode name="S01E01 - Zurück aufs College.avi" />
+            <episode name="S01E02 - Grundkurs Spanisch.avi" />
+            <episode name="S01E03 - Carpe Diem.avi" />
+            <episode name="S01E04 - Bitte warten.avi" />
+        </episodes>
+    </series>
 </seriesindex>
