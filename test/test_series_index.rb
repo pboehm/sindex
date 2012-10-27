@@ -88,4 +88,14 @@ class TestIndex < Test::Unit::TestCase
     assert_equal true, @series_index.episode_existing?("Prison Break",
         "Prison.Break.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
   end
+
+  def test_that_you_can_add_new_episodes_to_the_index
+    assert_equal @series_index.episode_existing?("Shameless US",
+        "Shameless.US.S01E09.German"), false
+
+    @series_index.add_episode_to_index("Shameless US", "S01E09 - Episode.mkv")
+
+    assert_equal @series_index.episode_existing?("Shameless US",
+        "Shameless.US.S01E09.German"), true
+  end
 end

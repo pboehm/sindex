@@ -93,6 +93,20 @@ module Sindex
       ! series_name_in_index(episode_text).nil?
     end
 
+    # Public: Adds episode to index
+    #
+    #   :series_name
+    #   :episode
+    #   :language
+    def add_episode_to_index(series_name, episode, language=:de)
+
+      series_name = series_name_in_index(series_name)
+
+      if series_name and series = @series_data[series_name]
+        series.add_episode(episode, language)
+      end
+    end
+
     class << self
 
       # Public: tries to extract the seriesname from supplied data
