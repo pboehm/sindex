@@ -9,11 +9,11 @@ module Sindex
       @en_episodes = {}
     end
 
-    def german_episodes?
+    def has_german_episodes?
       ! @de_episodes.empty?
     end
 
-    def english_episodes?
+    def has_english_episodes?
       ! @en_episodes.empty?
     end
 

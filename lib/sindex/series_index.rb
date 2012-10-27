@@ -48,6 +48,27 @@ module Sindex
       false
     end
 
+    # Public: Check if the series is watched in this specified language
+    #
+    # series_name - Name of the series in the index
+    # language - either :de or :en
+    #
+    # Returns true if the series is watched in the supplied language
+    def is_series_in_this_language?(series_name, language=:de)
+
+      series_name = series_name_in_index(series_name)
+
+      if series_name and series = @series_data[series_name]
+        if language == :de
+          return series.has_german_episodes?
+        else
+          return series.has_english_episodes?
+        end
+      end
+
+      false
+    end
+
     # Public: checks if the seriesname in the supplied data is in the
     # index or an alias to a series
     #

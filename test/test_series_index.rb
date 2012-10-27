@@ -21,14 +21,13 @@ class TestIndex < Test::Unit::TestCase
     assert_not_nil @series_index.series_data['Community']
 
     series = @series_index.series_data['Community']
-    assert_equal series.german_episodes?, true
+    assert_equal series.has_german_episodes?, true
     assert_not_nil series.de_episodes['1_1']
     assert_nil series.de_episodes['11_11']
 
     series = @series_index.series_data['Shameless US']
-    assert_equal series.german_episodes?, true
-    assert_equal series.english_episodes?, true
-
+    assert_equal series.has_german_episodes?, true
+    assert_equal series.has_english_episodes?, true
   end
 
   def test_that_series_aliases_take_place
@@ -37,6 +36,14 @@ class TestIndex < Test::Unit::TestCase
     assert_equal @series_index.is_series_in_index?("NoCommunity", true), false
 
     assert_equal @series_index.is_series_in_index?("shameless uS", true), true
+  end
+
+  def test_series_is_watched_in_a_specific_language
+    assert_equal @series_index.is_series_in_this_language?("Community", :de), true
+    assert_equal @series_index.is_series_in_this_language?("Community", :en), false
+
+    assert_equal @series_index.is_series_in_this_language?("Shameless US", :de), true
+    assert_equal @series_index.is_series_in_this_language?("Shameless US", :en), true
   end
 
   def test_check_for_episode_existance
