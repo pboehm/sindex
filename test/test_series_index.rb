@@ -1,10 +1,13 @@
 # encoding: UTF-8
 require File.dirname(__FILE__) + '/test_helper.rb'
+require 'fileutils'
 
 class TestIndex < Test::Unit::TestCase
 
   def setup
     index_file = File.dirname(__FILE__) + '/seriesindex_example.xml'
+
+    @tmp_directory = '/tmp/'
 
     @series_index = Sindex::SeriesIndex.new(index_file: index_file)
   end
@@ -61,5 +64,13 @@ class TestIndex < Test::Unit::TestCase
 
     assert_equal false, @series_index.episode_existing?("Community",
         "Community.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
+  end
+
+  def test_that_an_index_can_be_dumped_right
+    filename = @tmp_directory + 'dumped_index.xml'
+    @series_index.dump_index_to_file(filename)
+
+    index = Sindex::SeriesIndex.new(index_file: filename)
+    assert_equal index.is_series_in_index?("Community", true), true
   end
 end

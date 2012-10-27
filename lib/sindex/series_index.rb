@@ -65,6 +65,44 @@ module Sindex
       false
     end
 
+    # Public: Dumps the in-memory version of the index back to a xml file
+    #
+    #   :filename - path to file in which the index should be dumped
+    def dump_index_to_file(filename)
+
+      dtd_path = File.expand_path(
+        File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
+
+      builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
+        xml.doc.create_internal_subset("seriesindex", nil, dtd_path)
+
+        xml.seriesindex {
+          @series_data.each do |seriesname, data|
+            xml.series(:name => seriesname) {
+
+              # write alias definition if there are any
+              @series_aliases.select { |al,re| re == seriesname }.each do |_alias,real|
+                xml.alias(:to => _alias)
+              end
+
+              # write the different episodes
+              data.episodes.each do |language, episodes|
+                xml.episodes(:lang => language) {
+                  episodes.each do |episode_id, filename|
+                    xml.episode(:name => filename)
+                  end
+                }
+              end
+            }
+          end
+        }
+      end
+
+      File.open(filename, "w") do |f|
+        f.write(builder.to_xml);
+      end
+    end
+
     # Public: checks if the seriesname in the supplied data is in the
     # index or an alias to a series
     #
