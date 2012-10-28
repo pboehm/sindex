@@ -19,4 +19,7 @@ Gem::Specification.new do |gem|
 
   gem.add_runtime_dependency(%q<nokogiri>, [">= 1.5"])
   gem.add_runtime_dependency(%q<hashconfig>, [">= 0.0.1"])
+  gem.add_runtime_dependency(%q<serienrenamer>, [">= 0.0.1"])
+  gem.add_runtime_dependency(%q<serienmover>, [">= 0.0.1"])
+  gem.add_runtime_dependency(%q<highline>, ["= 1.6.13"])
 end
