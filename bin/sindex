@@ -1,0 +1,230 @@
+#!/usr/bin/env ruby
+# -*- ruby -*-
+# encoding: UTF-8
+
+$LOAD_PATH << File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'sindex'
+require 'serienrenamer'
+require 'serienmover'
+require 'fileutils'
+require 'hashconfig'
+require 'optparse'
+require 'digest/md5'
+require 'highline/import'
+require "highline/system_extensions"
+
+# create program configuration dirs/files
+CONFIG_DIR  = File.join( File.expand_path("~"), ".sindex" )
+CONFIG_FILE = File.join( CONFIG_DIR, "config.yml" )
+FileUtils.mkdir(CONFIG_DIR) unless File.directory?(CONFIG_DIR)
+
+###
+# configuration
+STANDARD_CONFIG = {
+  :index_file             => File.join(CONFIG_DIR, "seriesindex.xml"),
+  :pre_processing_hook    => "",
+  :post_processing_hook   => "",
+  :episode_hook           => "",
+  :episode_directory      => File.join(File.expand_path("~"), "Downloads"),
+  :information_store_path =>
+    File.join(File.expand_path("~"), ".serienrenamer/information_storage.yml"),
+  :byte_count_for_md5     => 2048,
+}
+
+config = STANDARD_CONFIG.merge_with_serialized(CONFIG_FILE)
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [DIR]"
+
+  opts.separator("")
+  opts.separator("Tool that manages an index with all your watched episodes")
+  opts.separator("")
+  opts.separator("  Options:")
+
+  opts.on( "-v", "--version", "Outputs the version number.") do |opt|
+    puts Sindex::VERSION
+    exit
+  end
+
+  opts.separator("  Arguments:")
+  opts.separator("     DIR      The path that includes the episodes")
+  opts.separator("              defaults to ~/Downloads")
+  opts.separator("")
+end.parse!
+
+
+class Cmdline
+  include HighLine::SystemExtensions
+
+  def initialize(config, options)
+    @config = config
+    @options = options
+
+    @series_index = Sindex::SeriesIndex.new(index_file: @config[:index_file])
+    @processed_episodes = {}
+
+  end
+
+  # mark episodes as watched
+  def mark_as_watched
+
+    @info_store = Serienrenamer::InformationStore.new(
+      @config[:information_store_path], @config[:byte_count_for_md5])
+
+    # process all episodes
+    Dir.chdir(@config[:episode_directory])
+    for filename in Dir.entries('.').sort do
+
+      next if filename.match(/^\./)
+      next unless Serienrenamer::Episode.determine_video_file(filename)
+
+      # process only files that have the right format
+      next unless filename.match(/^S\d+E\d+.-.\w+.*\.\w+$/)
+
+      puts "\n>>> #{filename}"
+
+      series_name = determine_series_name_for_episode(filename)
+      puts "<< selected series name: #{series_name}"
+
+      if not series_name
+        puts "No suitable series found/selected"
+        next
+      end
+
+      if not @series_index.is_series_in_index?(series_name)
+        puts "Series is not in index"
+        next
+      end
+
+      language = determine_episode_language(series_name, filename)
+      puts "<< language: #{language}"
+
+      if @series_index.episode_existing?(series_name, filename, language)
+        puts "This episode is already existing in this series"
+        next
+      end
+
+      @series_index.add_episode_to_index(series_name, filename, language)
+      @processed_episodes[filename] = series_name
+      puts "Added '#{filename}' to index"
+    end
+
+    if agree("\nShould I write the new index? ", true)
+      @series_index.dump_index_to_file(@config[:index_file])
+      puts "New Index version has been written\n"
+
+      # Post process all the episodes with a different hook
+      if @config[:episode_hook] and @config[:episode_hook].match(/\w+/)
+        @processed_episodes.each do |filename,series|
+          puts "Calling Epiode Hook for '#{filename}'"
+          cmd = '%s "%s" "%s"' % [ @config[:episode_hook], filename, series ]
+          system(cmd) or fail("Episode-Hook failed")
+        end
+      end
+    else
+      puts "the index was not changed"
+      exit
+    end
+  end
+
+  #############################################################################
+  #############################################################################
+  #############################################################################
+  private
+
+  def determine_episode_language(seriesname, filename)
+    series = @series_index.series_data[seriesname]
+
+    case series.episodes.size
+    when 0
+      return :de
+    when 1
+      return series.episodes.keys.first
+    else
+      language = nil
+
+      puts "The series has watched in multiple languages:"
+      choose do |menu|
+        menu.prompt = "Choose the right language: "
+
+        series.episodes.keys.each do |lang|
+          menu.choice lang.to_s do lambda { language = lang }.call end
+        end
+      end
+      return language
+    end
+
+  end
+
+
+  def determine_series_name_for_episode(filename)
+    sum = md5sum(filename)
+    if not @info_store.episode_hash[sum].nil?
+      series_pattern = @info_store.episode_hash[sum]
+      puts "<< from infostore: #{series_pattern}"
+
+      matching_series = @series_index.series_data.keys.select do |seriesname|
+        Serienmover::SeriesStore.does_match_series?(seriesname, series_pattern)
+      end
+
+      series = nil
+
+      case matching_series.size
+      when 0
+        puts "There are not further information about this episode"
+        series = ask("The name of the series: ") { |q| q.validate = /\w+/ }
+      when 1
+        series = matching_series[0]
+      else
+
+        puts "Available series names:"
+        choose do |menu|
+          menu.prompt = "Choose the right series: "
+
+          matching_series.each do |s|
+            menu.choice s do lambda { series = s }.call end
+          end
+        end
+      end
+      return series
+    else
+      return ask("The name of the series: ") { |q| q.validate = /\w+/ }
+    end
+  end
+
+
+  # Private: Generates a md5sum for the number of bytes for the supplied file
+  #
+  # Returns filename
+  def md5sum(filename)
+    if File.file?(filename)
+      d = Digest::MD5.new
+
+      file = File.new(filename)
+      return d.hexdigest(open(file, 'rb').read(@config[:byte_count_for_md5]))
+    end
+    nil
+  end
+end
+
+# calling the pre-processing hook to allow a git pull or something else 
+# in a Script
+if config[:pre_processing_hook] and config[:pre_processing_hook].match(/\w+/)
+    system(config[:pre_processing_hook]) or fail("Pre-Processing-Hook failed")
+end
+
+cmd = Cmdline.new(config, options)
+begin
+  cmd.mark_as_watched()
+
+  # calling the post-processing hook to allow a git commit/push or something
+  # else in a Script
+  if config[:post_processing_hook] and config[:post_processing_hook].match(/\w+/)
+    system(config[:post_processing_hook]) or fail("Post-Processing-Hook failed")
+  end
+rescue Interrupt => e
+  puts
+end
+
