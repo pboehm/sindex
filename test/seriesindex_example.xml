@@ -73,4 +73,12 @@
             <episode name="S01E04 - Bitte warten.avi" />
         </episodes>
     </series>
+    <series name="The Big Bang Theory">
+        <episodes>
+            <episode name="S06E01 - do not change.avi" all_before="true"/>
+            <episode name="S06E02 - Grundkurs Spanisch.avi" />
+            <episode name="S06E03 - Carpe Diem.avi" />
+            <episode name="S06E04 - Bitte warten.avi" />
+        </episodes>
+    </series>
 </seriesindex>

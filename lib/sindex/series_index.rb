@@ -163,9 +163,25 @@ module Sindex
 
               # write the different episodes
               data.episodes.each do |language, episodes|
+                add_all_before_flag=false
+
                 xml.episodes(:lang => language) {
                   episodes.each do |episode_id, filename|
-                    xml.episode(:name => filename)
+
+                    # only dump real episodes not virtual episodes that are
+                    # added because of the `all_before`-flag
+                    if filename == :virtual
+                      add_all_before_flag=true
+                      next
+                    end
+
+                    args = {:name => filename}
+                    if add_all_before_flag
+                      args[:all_before] = true
+                      add_all_before_flag=false
+                    end
+
+                    xml.episode(args)
                   end
                 }
               end
@@ -217,12 +233,18 @@ module Sindex
         s.receive_updates = false if series[:receive_updates].match(/false/i)
 
         series.css('episodes').each do |episodes|
-          language = episodes['lang'].match(/de/) ? :de : :en
+          language = episodes['lang'].to_sym
 
           episodes.css('episode').each do |episode|
             episode['name'] || next
 
-            s.add_episode(episode['name'], language)
+            # process `all_before` flag
+            all_before=false
+            if episode['all_before'] && episode['all_before'].match(/true/i)
+              all_before=true
+            end
+
+            s.add_episode(episode['name'], language, all_before)
           end
         end
 

@@ -9,6 +9,8 @@
 
 <!ELEMENT episode EMPTY>
 <!ATTLIST episode name CDATA #REQUIRED>
+<!ATTLIST episode all_before (true|false) "false">
+<!-- set this on an episode and all episodes before has also been watched -->
 
 <!ELEMENT alias EMPTY>
 <!ATTLIST alias to CDATA #REQUIRED>

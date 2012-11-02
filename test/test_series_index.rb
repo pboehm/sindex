@@ -1,6 +1,7 @@
 # encoding: UTF-8
 require File.dirname(__FILE__) + '/test_helper.rb'
 require 'fileutils'
+require 'nokogiri'
 
 class TestIndex < Test::Unit::TestCase
 
@@ -87,6 +88,20 @@ class TestIndex < Test::Unit::TestCase
     # :episode_existing? returns always true
     assert_equal true, @series_index.episode_existing?("Prison Break",
         "Prison.Break.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
+  end
+
+  def test_that_the_all_before_flag_is_interpreted
+    assert_equal true, @series_index.episode_existing?("The Big Bang Theory",
+        "Thee.Big.Bang.Theory.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
+  end
+
+  def test_that_the_all_before_flag_is_also_written_to_dumped_index
+    filename = @tmp_directory + 'dumped_index.xml'
+    @series_index.dump_index_to_file(filename)
+
+    doc = Nokogiri::XML(File.read(filename))
+    elems = doc.css('series[name="The Big Bang Theory"] > episodes > episode[all_before="true"]')
+    assert_equal false, elems.empty?
   end
 
   def test_that_you_can_add_new_episodes_to_the_index
