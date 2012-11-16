@@ -65,6 +65,37 @@ module Sindex
       false
     end
 
+    # Public: Builds up an index from a directory full of series
+    #
+    #  :directory - path to the directory that holds the series
+    #  :language - the language symbol which the episodes in the directory have
+    #
+    def build_up_index_from_directory(directory, language=:de)
+      raise ArgumentError, "you have not supplied an existing directory" unless
+        File.directory? directory
+
+        Dir.chdir(directory)
+
+        Dir['*'].sort.each do |directory|
+          next unless File.directory? directory
+
+          series = Series.new
+
+          Dir["#{directory}/**/*"].sort.each do |episode|
+            next unless File.file? episode
+            basename_episode = File.basename(episode)
+
+            next unless SeriesIndex.extract_episode_identifier(basename_episode)
+            next unless basename_episode.match(/\.(mkv|mov|avi|flv|mp4|mpg|wmv)$/)
+
+            series.add_episode(basename_episode, language)
+          end
+
+          @series_data[directory] = series
+        end
+
+    end
+
     # Public: Dumps the in-memory version of the index back to a xml file
     #
     #   :filename - path to file in which the index should be dumped

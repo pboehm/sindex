@@ -114,3 +114,48 @@ class TestIndex < Test::Unit::TestCase
         "Shameless.US.S01E09.German"), true
   end
 end
+
+class TestIndexParsedFromDir < Test::Unit::TestCase
+  def setup
+    TestData.create
+  end
+
+  def teardown
+    TestData.clean
+  end
+
+  def test_that_an_error_is_raised_if_the_directory_does_not_exist
+    index = Sindex::SeriesIndex.new()
+    assert_raise ArgumentError do
+      index.build_up_index_from_directory('/this/should/not/exist')
+    end
+  end
+
+  def test_that_the_index_holds_the_right_number_of_series
+    index = Sindex::SeriesIndex.new()
+    index.build_up_index_from_directory(TestData::SERIES_STORAGE_DIR)
+    assert_equal index.empty?, false
+    assert_equal 7, index.series_data.length
+    assert_equal true, index.is_series_in_index?("The Big Bang Theory")
+    assert_equal true, index.is_series_in_index?("Criminal Minds")
+  end
+
+  def test_that_episodes_from_directory_are_in_index
+    index = Sindex::SeriesIndex.new()
+    index.build_up_index_from_directory(TestData::SERIES_STORAGE_DIR)
+
+    assert_equal true, index.episode_existing?("Criminal Minds", "S01E01")
+    assert_equal false, index.episode_existing?("Criminal Minds", "S01E04")
+
+    assert_equal true, index.episode_existing?("Chuck", "S01E01")
+    assert_equal false, index.episode_existing?("Chuck", "S01E31")
+  end
+
+  def test_that_episodes_are_in_index_in_the_supplied_language
+    index = Sindex::SeriesIndex.new()
+    index.build_up_index_from_directory(TestData::SERIES_STORAGE_DIR, :en)
+
+    assert_equal true, index.episode_existing?("Criminal Minds", "S01E01", :en)
+    assert_equal false, index.episode_existing?("Criminal Minds", "S01E04", :en)
+  end
+end
