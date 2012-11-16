@@ -34,12 +34,16 @@ STANDARD_CONFIG = {
 
 config = STANDARD_CONFIG.merge_with_serialized(CONFIG_FILE)
 
-options = {}
+options = {
+  :language => :de,
+}
 OptionParser.new do |opts|
-  opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [DIR]"
+  opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [OPTIONS] [DIR]"
 
   opts.separator("")
-  opts.separator("Tool that manages an index with all your watched episodes")
+  opts.separator("Tool that manages an index with all your watched episodes.")
+  opts.separator("The default action without any arguments adds new episodes")
+  opts.separator("to the index.")
   opts.separator("")
   opts.separator("  Options:")
 
@@ -48,11 +52,41 @@ OptionParser.new do |opts|
     exit
   end
 
+  opts.on( "-i", "--indexfile STRING", String,
+        "Path to the index that holds the index") do |opt|
+
+    config[:index_file] = opt
+  end
+
+  opts.on( "-b", "--buildindex STRING", String,
+    "Build an index by reading the series/episodes from the supplied directory") do |opt|
+
+    raise ArgumentError, "supplied directory does not exist" unless
+        File.directory? opt
+    options[:build_index_from_dir] = opt
+  end
+
+  opts.on( "-l", "--language STRING", String,
+    "language in which the episodes in the directory are, choices: (de,en,fr)") do |opt|
+
+    raise ArgumentError, "Supplied Language not supported, choices:(de,en,fr)" unless
+        opt.match(/^(de|en|fr)$/)
+    options[:language] = opt.to_sym
+  end
+
+  opts.separator("")
   opts.separator("  Arguments:")
   opts.separator("     DIR      The path that includes the episodes")
   opts.separator("              defaults to ~/Downloads")
   opts.separator("")
 end.parse!
+
+# change episode directory if a different directory is supplied
+if directory = ARGV.pop
+  raise ArgumentError, "supplied directory does not exist" unless
+    File.directory? directory
+  config[:episode_directory] = directory
+end
 
 
 class Cmdline
@@ -62,19 +96,30 @@ class Cmdline
     @config = config
     @options = options
 
-    @series_index = Sindex::SeriesIndex.new(index_file: @config[:index_file])
     @processed_episodes = {}
-
   end
 
-  # mark episodes as watched
+  def build_up_index
+    @series_index = Sindex::SeriesIndex.new
+    @series_index.build_up_index_from_directory(
+        @options[:build_index_from_dir], @options[:language])
+
+    @series_index.dump_index_to_file(@config[:index_file])
+  end
+
   def mark_as_watched
+    call_pre_processing_hook
+
+    @series_index = Sindex::SeriesIndex.new(index_file: @config[:index_file])
 
     @info_store = Serienrenamer::InformationStore.new(
       @config[:information_store_path], @config[:byte_count_for_md5])
 
     # process all episodes
     Dir.chdir(@config[:episode_directory])
+
+    added_episodes=false
+
     for filename in Dir.entries('.').sort do
 
       next if filename.match(/^\./)
@@ -109,7 +154,11 @@ class Cmdline
       @series_index.add_episode_to_index(series_name, filename, language)
       @processed_episodes[filename] = series_name
       puts "Added '#{filename}' to index"
+
+      added_episodes=true
     end
+
+    exit unless added_episodes
 
     if agree("\nShould I write the new index? ", true)
       @series_index.dump_index_to_file(@config[:index_file])
@@ -123,6 +172,8 @@ class Cmdline
           system(cmd) or fail("Episode-Hook failed")
         end
       end
+
+      call_post_processing_hook
     else
       puts "the index was not changed"
       exit
@@ -133,6 +184,22 @@ class Cmdline
   #############################################################################
   #############################################################################
   private
+
+  def call_pre_processing_hook
+    # calling the pre-processing hook to allow a git pull or something else
+    # in a Script
+    if @config[:pre_processing_hook] and @config[:pre_processing_hook].match(/\w+/)
+      system(@config[:pre_processing_hook]) or fail("Pre-Processing-Hook failed")
+    end
+  end
+
+  def call_post_processing_hook
+    # calling the post-processing hook to allow a git commit/push or something
+    # else in a Script
+    if @config[:post_processing_hook] and @config[:post_processing_hook].match(/\w+/)
+      system(@config[:post_processing_hook]) or fail("Post-Processing-Hook failed")
+    end
+  end
 
   def determine_episode_language(seriesname, filename)
     series = @series_index.series_data[seriesname]
@@ -155,9 +222,7 @@ class Cmdline
       end
       return language
     end
-
   end
-
 
   def determine_series_name_for_episode(filename)
     sum = md5sum(filename)
@@ -194,7 +259,6 @@ class Cmdline
     end
   end
 
-
   # Private: Generates a md5sum for the number of bytes for the supplied file
   #
   # Returns filename
@@ -209,21 +273,17 @@ class Cmdline
   end
 end
 
-# calling the pre-processing hook to allow a git pull or something else 
-# in a Script
-if config[:pre_processing_hook] and config[:pre_processing_hook].match(/\w+/)
-    system(config[:pre_processing_hook]) or fail("Pre-Processing-Hook failed")
-end
+##########################
+# Do the actual processing
 
 cmd = Cmdline.new(config, options)
 begin
-  cmd.mark_as_watched()
-
-  # calling the post-processing hook to allow a git commit/push or something
-  # else in a Script
-  if config[:post_processing_hook] and config[:post_processing_hook].match(/\w+/)
-    system(config[:post_processing_hook]) or fail("Post-Processing-Hook failed")
+  if options[:build_index_from_dir]
+    cmd.build_up_index
+  else
+    cmd.mark_as_watched
   end
+
 rescue Interrupt => e
   puts
 end
