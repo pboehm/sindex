@@ -231,11 +231,11 @@ module Sindex
     # Returns the seriesname in index or nil if it does not exist
     def series_name_in_index(name)
 
-      matching_series = @series_data.keys.grep(/#{name}/i).first
+      matching_series = @series_data.keys.grep(/^#{name}$/i).first
       return matching_series if matching_series
 
       @series_aliases.each do |key, val|
-        if key.match(/#{name}/i)
+        if key.match(/^#{name}$/i)
           return val
         end
       end
