@@ -1,7 +1,7 @@
 # Sindex [![Build Status](https://secure.travis-ci.org/pboehm/sindex.png)](http://travis-ci.org/pboehm/sindex)
 
 Sindex is a tool and library that manages an index file, which contains the tv
-series and episodes you have been watched. This index can be used by other
+series and episodes you have watched. This index can be used by other
 tools like `sjunkieex` to determine new episodes that you are interested in.
 [Here](https://github.com/pboehm/sindex/blob/master/test/seriesindex_example.xml)
 is an example, how an index looks like and what features are supported.
