@@ -2,15 +2,20 @@
 require File.dirname(__FILE__) + '/test_helper.rb'
 require 'fileutils'
 require 'nokogiri'
+require 'tempfile'
 
 class TestIndex < Test::Unit::TestCase
 
+  STANDARD_SINDEX_PATH = File.dirname(__FILE__) + '/seriesindex_example.xml'
+  STANDARD_SINDEX_CONTENT = File.open(STANDARD_SINDEX_PATH).read
+
   def setup
-    index_file = File.dirname(__FILE__) + '/seriesindex_example.xml'
 
-    @tmp_directory = '/tmp/'
+    @tempfile = Tempfile.new('seriesindex')
+    @tempfile.puts(STANDARD_SINDEX_CONTENT)
+    @tempfile.flush
 
-    @series_index = Sindex::SeriesIndex.new(index_file: index_file)
+    @series_index = Sindex::SeriesIndex.new(index_file: @tempfile.path)
   end
 
   def test_instantiating
@@ -19,6 +24,11 @@ class TestIndex < Test::Unit::TestCase
     assert_instance_of Sindex::SeriesIndex, index
     assert_instance_of Hash, index.series_data
     assert_equal index.empty?, true
+  end
+
+  def test_that_the_path_of_DTD_file_has_been_updated
+    content = File.open(@tempfile.path).read
+    assert_equal content.match(/^.*DOCTYPE.*\"res\/seriesindex.xml\".*$/), nil
   end
 
   def test_parsing_a_valid_series_index
@@ -68,7 +78,7 @@ class TestIndex < Test::Unit::TestCase
   end
 
   def test_that_an_index_can_be_dumped_right
-    filename = @tmp_directory + 'dumped_index.xml'
+    filename = Tempfile.new('dumped_index').path
     @series_index.dump_index_to_file(filename)
 
     index = Sindex::SeriesIndex.new(index_file: filename)
@@ -96,7 +106,7 @@ class TestIndex < Test::Unit::TestCase
   end
 
   def test_that_the_all_before_flag_is_also_written_to_dumped_index
-    filename = @tmp_directory + 'dumped_index.xml'
+    filename = Tempfile.new('dumped_index').path
     @series_index.dump_index_to_file(filename)
 
     doc = Nokogiri::XML(File.read(filename))
