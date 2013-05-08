@@ -167,6 +167,57 @@ module Sindex
         nil
       end
 
+
+      # Public: tries to match the suppplied seriesname pattern
+      #         agains the series
+      #
+      # seriesname     - the seriesname that comes from the index
+      # series_pattern - the series_name that has to be checked
+      #                  agains the seriesname
+      # fuzzy          - does a fuzzy match against the series
+      #
+      # Returns true if it matches otherwise false
+      def does_the_series_match?(seriesname, series_pattern, fuzzy=false)
+
+        if seriesname.match(/#{series_pattern}/i)
+          # if pattern matches the series directly
+          return true
+
+        elsif fuzzy
+          # start with a pattern that includes all words from
+          # series_pattern and if this does not match, it cuts
+          # off the first word and tries to match again
+          #
+          # if the pattern contains one word and if this
+          # still not match, the last word is splitted
+          # characterwise, so that:
+          #  crmi ==> Criminal Minds
+          name_words = series_pattern.split(/ /)
+          word_splitted = false
+
+          while ! name_words.empty?
+
+            pattern = name_words.join('.*')
+            return true if seriesname.match(/#{pattern}/i)
+
+            # split characterwise if last word does not match
+            if name_words.length == 1 && ! word_splitted
+              name_words = pattern.split(//)
+              word_splitted = true
+              next
+            end
+
+            # if last word was splitted and does not match than break
+            # and return empty resultset
+            break if word_splitted
+
+            name_words.delete_at(0)
+          end
+        end
+
+        false
+      end
+
     end
 
     private

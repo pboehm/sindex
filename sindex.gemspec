@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.name          = "sindex"
   gem.version       = Sindex::VERSION
   gem.authors       = ["Philipp Böhm"]
-  gem.email         = ["philipp-boehm@live.de"]
+  gem.email         = ["philipp@pboehm.org"]
   gem.description   = %q{Tool and library that manages the episodes you have seen in different tv series}
   gem.summary       = %q{Series-Index that manages your watched episodes}
   gem.homepage      = "https://github.com/pboehm/sindex"
@@ -20,6 +20,5 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency(%q<nokogiri>, [">= 1.5"])
   gem.add_runtime_dependency(%q<hashconfig>, [">= 0.0.1"])
   gem.add_runtime_dependency(%q<serienrenamer>, [">= 0.0.16"])
-  gem.add_runtime_dependency(%q<serienmover>, [">= 0.0.1"])
-  gem.add_runtime_dependency(%q<highline>, ["= 1.6.13"])
+  gem.add_runtime_dependency(%q<highline>, ["~> 1.6.13"])
 end

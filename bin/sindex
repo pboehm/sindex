@@ -6,7 +6,6 @@ $LOAD_PATH << File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'sindex'
 require 'serienrenamer'
-require 'serienmover'
 require 'fileutils'
 require 'hashconfig'
 require 'optparse'
@@ -167,7 +166,7 @@ class Cmdline
       # Post process all the episodes with a different hook
       if @config[:episode_hook] and @config[:episode_hook].match(/\w+/)
         @processed_episodes.each do |filename,series|
-          puts "Calling Epiode Hook for '#{filename}'"
+          puts "Calling Episode Hook for '#{filename}'"
           cmd = '%s "%s" "%s"' % [ @config[:episode_hook], filename, series ]
           system(cmd) or fail("Episode-Hook failed")
         end
@@ -193,6 +192,7 @@ class Cmdline
     end
   end
 
+
   def call_post_processing_hook
     # calling the post-processing hook to allow a git commit/push or something
     # else in a Script
@@ -200,6 +200,7 @@ class Cmdline
       system(@config[:post_processing_hook]) or fail("Post-Processing-Hook failed")
     end
   end
+
 
   def determine_episode_language(seriesname, filename)
     series = @series_index.series_data[seriesname]
@@ -224,14 +225,28 @@ class Cmdline
     end
   end
 
+
   def determine_series_name_for_episode(filename)
     sum = md5sum(filename)
     if not @info_store.episode_hash[sum].nil?
       series_pattern = @info_store.episode_hash[sum]
       puts "<< from infostore: #{series_pattern}"
 
-      matching_series = @series_index.series_data.keys.select do |seriesname|
-        Serienmover::SeriesStore.does_match_series?(seriesname, series_pattern)
+      # try to find an exact match otherwise a fuzzy matching approach
+      fuzzy = false
+      matching_series = []
+
+      loop do
+        matching_series = @series_index.series_data.keys.select do |seriesname|
+            Sindex::SeriesIndex.does_the_series_match?(seriesname, series_pattern, fuzzy)
+        end
+
+        if matching_series.empty? and not fuzzy
+            fuzzy = true
+            redo
+        end
+
+        break
       end
 
       series = nil
@@ -258,6 +273,7 @@ class Cmdline
       return ask("The name of the series: ") { |q| q.validate = /\w+/ }
     end
   end
+
 
   # Private: Generates a md5sum for the number of bytes for the supplied file
   #
