@@ -57,6 +57,13 @@ OptionParser.new do |opts|
     config[:index_file] = opt
   end
 
+  opts.on( "-n", "--new-series STRING", String,
+        "Add a new series to the index. It creates an episode S01E00 for you.") do |opt|
+
+    options[:new_series] ||= []
+    options[:new_series] << opt
+  end
+
   opts.on( "-b", "--buildindex STRING", String,
     "Build an index by reading the series/episodes from the supplied directory") do |opt|
 
@@ -98,6 +105,7 @@ class Cmdline
     @processed_episodes = {}
   end
 
+
   def build_up_index
     @series_index = Sindex::SeriesIndex.new
     @series_index.build_up_index_from_directory(
@@ -105,6 +113,26 @@ class Cmdline
 
     @series_index.dump_index_to_file(@config[:index_file])
   end
+
+
+  def add_new_series
+    call_pre_processing_hook
+
+    @series_index = Sindex::SeriesIndex.new(index_file: @config[:index_file])
+    changed = false
+
+    @options[:new_series].each do |series|
+      next unless series =~ /\w+/
+      next if @series_index.is_series_in_index?(series)
+
+      puts "Creating new index entry for '%s' with S01E00 episode" % [series]
+      @series_index.add_new_series_to_index(series)
+      changed = true
+    end
+
+    write_new_index_if_wanted if changed
+  end
+
 
   def mark_as_watched
     call_pre_processing_hook
@@ -157,7 +185,11 @@ class Cmdline
       added_episodes=true
     end
 
-    exit unless added_episodes
+    write_new_index_if_wanted if added_episodes
+  end
+
+
+  def write_new_index_if_wanted
 
     if agree("\nShould I write the new index? ", true)
       @series_index.dump_index_to_file(@config[:index_file])
@@ -294,8 +326,13 @@ end
 
 cmd = Cmdline.new(config, options)
 begin
+
   if options[:build_index_from_dir]
     cmd.build_up_index
+
+  elsif options[:new_series]
+    cmd.add_new_series
+
   else
     cmd.mark_as_watched
   end

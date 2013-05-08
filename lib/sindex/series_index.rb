@@ -111,6 +111,7 @@ module Sindex
       end
     end
 
+
     # Public: checks if the seriesname in the supplied data is in the
     # index or an alias to a series
     #
@@ -127,6 +128,7 @@ module Sindex
       ! series_name_in_index(episode_text).nil?
     end
 
+
     # Public: Adds episode to index
     #
     #   :series_name
@@ -139,6 +141,18 @@ module Sindex
       if series_name and series = @series_data[series_name]
         series.add_episode(episode, language)
       end
+    end
+
+
+    # Public: Adds a new series to the index with an S01E00 episode
+    def add_new_series_to_index(series_name)
+      raise ArgumentError, "series (#{ series_name }) is already in index" if
+          is_series_in_index?(series_name)
+
+      series = Sindex::Series.new
+      series.add_episode("S01E00 - some really cool episode name.mkv")
+
+      @series_data[series_name] = series
     end
 
     class << self
