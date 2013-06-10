@@ -29,6 +29,7 @@ STANDARD_CONFIG = {
   :information_store_path =>
     File.join(File.expand_path("~"), ".serienrenamer/information_storage.yml"),
   :byte_count_for_md5     => 2048,
+  :ask_before_writing_new_index => true,
 }
 
 config = STANDARD_CONFIG.merge_with_serialized(CONFIG_FILE)
@@ -191,24 +192,26 @@ class Cmdline
 
   def write_new_index_if_wanted
 
-    if agree("\nShould I write the new index? ", true)
-      @series_index.dump_index_to_file(@config[:index_file])
-      puts "New Index version has been written\n"
-
-      # Post process all the episodes with a different hook
-      if @config[:episode_hook] and @config[:episode_hook].match(/\w+/)
-        @processed_episodes.each do |filename,series|
-          puts "Calling Episode Hook for '#{filename}'"
-          cmd = '%s "%s" "%s"' % [ @config[:episode_hook], filename, series ]
-          system(cmd) or fail("Episode-Hook failed")
-        end
+    if @config[:ask_before_writing_new_index] 
+      if not agree("\nShould I write the new index? ", true)
+        puts "the index was not changed"
+        exit
       end
-
-      call_post_processing_hook
-    else
-      puts "the index was not changed"
-      exit
     end
+
+    @series_index.dump_index_to_file(@config[:index_file])
+    puts "New Index version has been written\n"
+
+    # Post process all the episodes with a different hook
+    if @config[:episode_hook] and @config[:episode_hook].match(/\w+/)
+      @processed_episodes.each do |filename,series|
+        puts "Calling Episode Hook for '#{filename}'"
+        cmd = '%s "%s" "%s"' % [ @config[:episode_hook], filename, series ]
+        system(cmd) or fail("Episode-Hook failed")
+      end
+    end
+
+    call_post_processing_hook
   end
 
   #############################################################################
