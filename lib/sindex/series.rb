@@ -73,9 +73,9 @@ module Sindex
         virtual_ids= []
 
         1.upto(season).each do |s|
-          episode_range = (1..50).to_a
+          episode_range = (0..50).to_a
           if s == season
-            episode_range = (1...episode).to_a
+            episode_range = (0...episode).to_a
           end
 
           episode_range.each do |e|

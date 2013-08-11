@@ -105,6 +105,14 @@ class TestIndex < Test::Unit::TestCase
         "Thee.Big.Bang.Theory.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
   end
 
+  def test_that_all_before_adds_an_zero_episode
+    assert_equal true, @series_index.episode_existing?("The Big Bang Theory",
+        "Thee.Big.Bang.Theory.S03E00.Wie.auch.immer.DL.German.HDTV.XviD-GDR")
+
+    assert_equal true, @series_index.episode_existing?("The Big Bang Theory",
+        "Thee.Big.Bang.Theory.S06E00.Wie.auch.immer.DL.German.HDTV.XviD-GDR")
+  end
+
   def test_that_the_all_before_flag_is_also_written_to_dumped_index
     filename = Tempfile.new('dumped_index').path
     @series_index.dump_index_to_file(filename)
