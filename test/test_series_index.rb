@@ -77,6 +77,13 @@ class TestIndex < Test::Unit::TestCase
         "Community.S01E31.Bankgeheimnis.DL.German.HDTV.XviD-GDR")
   end
 
+  def test_that_invalid_series_data_does_not_crash_sindex
+    assert_nothing_raised {
+      @series_index.is_series_in_index?(
+        "Family.Guy.Presents.Its.a.Trap.2010.1080p.BluRay.DTS.DL.x264-HDC.(S09E18)")
+    }
+  end
+
   def test_that_an_index_can_be_dumped_right
     filename = Tempfile.new('dumped_index').path
     @series_index.dump_index_to_file(filename)
