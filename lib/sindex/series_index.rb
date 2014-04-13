@@ -383,7 +383,7 @@ module Sindex
       dtd_path = File.expand_path(
         File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
 
-      content.delete_if {|line| line.match(/^.*DOCTYPE/) }
+      content.reject! {|line| line.match(/^.*DOCTYPE/) }
       content.insert(1, '<!DOCTYPE seriesindex SYSTEM "' + dtd_path +'">')
 
       content.join("\n")
