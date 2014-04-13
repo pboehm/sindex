@@ -359,7 +359,7 @@ module Sindex
     #
     # returns Nokogiri XML Document
     def open_xml_file(file)
-      xml_content = add_dtd_reference(File.read(file).lines)
+      xml_content = add_dtd_reference(File.read(file).lines.to_a)
 
       options = Nokogiri::XML::ParseOptions::DEFAULT_XML |
                   Nokogiri::XML::ParseOptions::DTDLOAD
