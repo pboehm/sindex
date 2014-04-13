@@ -7,15 +7,10 @@ require 'tempfile'
 class TestIndex < Test::Unit::TestCase
 
   STANDARD_SINDEX_PATH = File.dirname(__FILE__) + '/seriesindex_example.xml'
-  STANDARD_SINDEX_CONTENT = File.open(STANDARD_SINDEX_PATH).read
+  NEW_FORMAT_SINDEX_PATH = File.dirname(__FILE__) + '/seriesindex_new_format.xml'
 
   def setup
-
-    @tempfile = Tempfile.new('seriesindex')
-    @tempfile.puts(STANDARD_SINDEX_CONTENT)
-    @tempfile.flush
-
-    @series_index = Sindex::SeriesIndex.new(index_file: @tempfile.path)
+    @series_index = Sindex::SeriesIndex.new(index_file: STANDARD_SINDEX_PATH)
   end
 
   def test_instantiating
@@ -24,11 +19,6 @@ class TestIndex < Test::Unit::TestCase
     assert_instance_of Sindex::SeriesIndex, index
     assert_instance_of Hash, index.series_data
     assert_equal index.empty?, true
-  end
-
-  def test_that_the_path_of_DTD_file_has_been_updated
-    content = File.open(@tempfile.path).read
-    assert_equal content.match(/^.*DOCTYPE.*\"res\/seriesindex.xml\".*$/), nil
   end
 
   def test_parsing_a_valid_series_index
@@ -42,6 +32,13 @@ class TestIndex < Test::Unit::TestCase
     series = @series_index.series_data['Shameless US']
     assert_equal series.has_episodes_in_language?(:de), true
     assert_equal series.has_episodes_in_language?(:en), true
+  end
+
+  def test_parsing_index_in_new_format
+    assert_nothing_raised do
+      index = Sindex::SeriesIndex.new(index_file: NEW_FORMAT_SINDEX_PATH)
+      assert_equal index.is_series_in_index?("shameless uS", true), true
+    end
   end
 
   def test_that_series_aliases_take_place

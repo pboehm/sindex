@@ -18,8 +18,6 @@ module Sindex
       @series_data = {}
       @series_aliases = {}
 
-      @dtd_path = File.expand_path(
-        File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
 
       if @index_file and File.file? @index_file
         parse_file(@index_file)
@@ -243,8 +241,6 @@ module Sindex
     def build_up_xml_tree_from_index
 
       builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
-        xml.doc.create_internal_subset("seriesindex", nil, @dtd_path)
-
         xml.seriesindex {
           @series_data.sort.map do |seriesname, data|
             attrs = {:name => seriesname}
@@ -363,12 +359,12 @@ module Sindex
     #
     # returns Nokogiri XML Document
     def open_xml_file(file)
-      fix_broken_dtd_path(file)
+      xml_content = add_dtd_reference(File.read(file).lines)
 
       options = Nokogiri::XML::ParseOptions::DEFAULT_XML |
                   Nokogiri::XML::ParseOptions::DTDLOAD
 
-      doc = Nokogiri::XML::Document.parse(File.read(file), nil, nil, options)
+      doc = Nokogiri::XML::Document.parse(xml_content, nil, nil, options)
       doc.external_subset || raise(XmlDTDError, "DTD could not be processed")
 
       errors = doc.external_subset.validate(doc)
@@ -383,14 +379,14 @@ module Sindex
     end
 
     # Internal: fixes the path that points to the dtd file in the seriesindex
-    def fix_broken_dtd_path(file)
-      new_doctype = '<!DOCTYPE seriesindex SYSTEM "' + @dtd_path +'">'
+    def add_dtd_reference(content)
+      dtd_path = File.expand_path(
+        File.join(File.dirname(__FILE__), '../../res/seriesindex.dtd'))
 
-      lines = File.open(file).read
-      lines.gsub!(/^.*DOCTYPE.*SYSTEM.*$/, new_doctype)
+      content.delete_if {|line| line.match(/^.*DOCTYPE/) }
+      content.insert(1, '<!DOCTYPE seriesindex SYSTEM "' + dtd_path +'">')
 
-      File.open(file, 'w') {|f| f.write(lines) }
+      content.join("\n")
     end
-
   end
 end
